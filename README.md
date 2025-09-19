@@ -1,7 +1,7 @@
 # Module 1: Climate
 
 ## Team members and contributions
-To be updated
+Adam Akins, received some assistance from Evan Wyers
 
 ## Learning objectives
 
