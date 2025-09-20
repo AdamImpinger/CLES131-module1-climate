@@ -1,23 +1,20 @@
 ---
 title: "Module 1: Climate change"
 format: pdf
-editor: source
-editor_options: 
-  chunk_output_type: console
+editor: visual
 ---
 
 ```{r}
-#| warning: false
-library(tidyverse)
+
 ```
 
-### Use of GitHub
+## Team members, etc
 
-Link to your forked GH repository:
+List your team member(s): Adam
 
-### Use of Quarto
+Include a link to your forked GH repository: <https://github.com/AdamImpinger/CLES131-module1-climate.git>
 
-Link to your .qmd file:
+Include a link to your .qmd file:
 
 ## CO2 trends from Mauna Loa
 
@@ -28,7 +25,8 @@ With data you've collected yourself, it is more common to store locally as a csv
 ```{r}
 #| warning: false
 #| output: false
-co2 <-read_table("https://gml.noaa.gov/webdata/ccgg/trends/co2/co2_mm_mlo.txt", 
+library(tidyverse)
+co2 <- read_table("https://gml.noaa.gov/webdata/ccgg/trends/co2/co2_mm_mlo.txt", 
                   comment="#",
                   col_names = c("year", "month", "decimal_date", "average",
                                 "interpolated", "trend", "days"),
@@ -40,23 +38,107 @@ You can examine these data in several ways. One option is to use your mouse in t
 ```{r}
 str(co2)
 head(co2)
+print(co2)
 ```
 
 ### Q1 (1 point)
 
 Create a timeseries plot of average \[CO~2~\]. Use `as.Date()` to create a formatted date for the x-axis. Label both the y-axis and add a line to connect the points.
 
+```{r}
+date.formatting <- lubridate::date_decimal(co2$decimal_date)
+dates.co2 <- add_column(co2, date.formatting)
+
+
+base.plot <- ggplot(data<-dates.co2 |>
+         drop_na(),
+       mapping = aes(x=as.Date(date.formatting),
+                     y=average))+
+                     geom_line(color="darkred") +
+  stat_smooth(method = "lm", color="darkred")+
+  labs(
+    x= "Time",
+    y="CO2 mole fraction in PPM")
+base.plot
+
+              
+```
+
 ### Q2 (1 point)
 
 What months are the \[CO~2~\] values at the maximum? Create another dataframe with these months selected and create a plot like above, but with the maximum months colored in "forestgreen".
+
+print(max(means.co2)
+
+```{r}
+#trying something unelegant 
+means.co2<- dates.co2|>
+  group_by(month) |> 
+  summarise(mean_co2 = mean(average, na.rm = TRUE))
+
+print(means.co2)
+  #may is the month with the highest value, followed within decimals by may and june, lets highlight color by setting forestgreen to correlate with "4:6"
+co2.peaks <- dates.co2 |> 
+  dplyr:: filter(month == 4|month == 5|month == 6)
+base.plot <- ggplot(data<-dates.co2 |>
+         drop_na(),
+       mapping = aes(x=as.Date(date.formatting),
+                     y=average))+
+                     geom_line(color="darkred") +
+  labs(
+    x= "Time",
+    y="CO2 mole fraction in PPM")
+base.plot <- base.plot+geom_point(data = co2.peaks |> 
+                                    drop_na(),
+                                  aes(x = as.Date(date.formatting), 
+                                      y = average,
+                                      color= I("forestgreen")),
+                                  show.legend = FALSE,
+                                     color="forestgreen", size = 2)
+base.plot
+
+
+
+  
+
+```
+
+```{r}
+
+#decompse and str functions seems to be the most applicable but, need t transition dates.co2 in a time series object — moveed past this but included to show process
+#install.packages("tsibble")
+library("tsibble")
+timeseries.co2 <- tsibble(dates.co2)
+#fit.multiplicative <- decompose(timeseries.co2, type = "multiplicative",filter = NULL)
+
+
+# did not succed in this endevor, opened up a new chunk and tried doing it in a simpler way
+
+
+
+
+            
+            
+            
+```
 
 ### Q3 (1 point)
 
 What explains the seasonal variation in \[CO~2~\]? After reading Lewandowsky et al. 2016, how might you go about separating the long term trend and the seasonal variation in \[CO~2~\]?
 
+The seasonal variation in \[CO2\] is a result of seasonal growth cycles. As plants begin photosynthesizing at high rates to facilitate growth, atmospheric co2 trends downward, and then decay and decomposition caused by the end of the growing season leads to reintroduction of CO2.
+
+```{r}
+
+```
+
 ## Global temperature
 
-Next, we turn to a global temperature anomaly [dataset](https://data.giss.nasa.gov/gistemp/graphs/graph_data/Global_Mean_Estimates_based_on_Land_and_Ocean_Data/graph.txt) from NASA GISS, similar to the GMST used by Lewandowsky et al. 2016.
+Next, we turn to a global temperature anomaly dataset from NASA GISS, similar to the GMST used by Lewandowsky et al. 2016.
+
+```{r}
+
+```
 
 ### Q4 (1 point)
 
@@ -64,21 +146,86 @@ Read some [background](https://data.giss.nasa.gov/gistemp/history/background.htm
 
 How are the measurements made? Describe each column in the dataset and its units. What are the resolution of the data?
 
+```{r}
+
+```
+
 ### Q5 (1 point)
 
 Construct code to import dataset in a format that can be used for transforming and visualization.
+
+```{r}
+anomaly_NASA <- read_table(
+  "https://data.giss.nasa.gov/gistemp/graphs/graph_data/Global_Mean_Estimates_based_on_Land_and_Ocean_Data/graph.txt",
+  comment = "#",   
+  col_names = c("Year", "No_Smoothing", "Lowess_Smoothing"),
+  na = c("-99.99", "-1")  
+)
+head(anomaly_NASA)
+                         
+tidy_anomaly <- anomaly_NASA |>
+  drop_na() |>
+  pivot_longer(
+    cols = c(No_Smoothing, Lowess_Smoothing),
+    names_to = "Trend_Type",
+    values_to = "Temperature"
+  ) |>
+  mutate(
+    Temperature = as.numeric(Temperature),
+    Year = as.numeric(Year) 
+  ) |>
+  filter(!is.na(Temperature), !is.na(Year)) |> 
+  drop_na(Temperature, Year)
+
+
+  
+
+
+```
 
 ### Q6 (1 point)
 
 Plot the trend in global mean temperature over time. Describe what you see and how you interpret the patterns you observe.
 
+```{r}
+
+gistemp<-ggplot(tidy_anomaly, aes(x = Year, y = Temperature, color = Trend_Type)) +
+  geom_line() +
+  theme_minimal() +
+  labs(
+    title = "NASA GISTEMP Global Mean Temperature Anomalies",
+    y = "Temperature (°C)",
+    x = "Year"
+  )
+gistemp
+
+```
+
+THe above plot marks the indivdual data points for mean temperature over a century of data collected by taking surface tmeperature measurements at a range of latitudes. LOWESS smothing, a form of weighted regression, draws a smooth trned line through these points to illuminate a longterm trend of warming encapsulating short spance of fluctuation. This dataset, akin to the disscussion in Lewandowsky et.al marks flucatations in the contexts of a warming trend, providing evidence contrary to impressions from northern latitudes that a pause and global cooling after 1940 was large/significant, proving that there was net global warming of about 0.4°C between the 1880s and 1970s and a continued upward trend to current date.
+
 ### Q7 (1 point)
 
 Consider the "pause" analyzed in Lewandowsky et al. 2016. Do you see evidence for such a pause?
 
+Thassumption of a pause from the trends presented in this graph are not extremely unreasonable from an unassumnig lens. After rapid heating and a minor period off cooling observed in the mid 50's, the rate of cooling is not as rapid as seen. Lewandowsky et al. argues that this does not reach the standard for a pause because the period of cooling was not greater or equal to the degree of heating that preceded it.
+
 ### Bonus 1 (1 point)
 
 Recreate the analysis from Lewandowsky's Fig. 1.
+
+```{r}
+y.mean=mean(tidy_anomaly$Temperature == "Lowess_smoothing")
+fig.1redo <- ggplot(tidy_anomaly, aes(x = Year, y = Temperature, color = Trend_Type)) +
+  geom_line() +
+  geom_hline(yintercept = y.mean, color = "brown", linetype = "dashed")
+  theme_minimal() +
+  labs(
+    title = "NASA GISTEMP Global Mean Temperature Anomalies",
+    y = "Temperature (°C)",
+    x = "Year"
+  )
+  fig.1redo
+```
 
 ## Long term records of CO2
 
@@ -86,18 +233,111 @@ The data from Mauna Loa go back as far as modern instrumentation. To put these v
 
 Previously hosted by Oak Ridge National Lab, the [data](https://zenodo.org/records/3678928) associated with the famed Vostok Ice Core is now archived on Zenodo. Skim [Barnola et al. 1987](https://www.nature.com/articles/329408a0) as needed.
 
+After downloading this dataset, create a folder entitled `data` and save the file within the folder with a .txt extension. Read this file into R, making sure you understand the column names and units.
+
 ### Q8 (1 point)
 
 After downloading this dataset, create a folder entitled `data` and save the file within the folder with a .txt extension. Read this file into R. What are the columns and units? How were these data obtained?
+
+This data set explores cored samples of ice pulled from different depths, which were each marked and recorded in meters. These samples contained ice and pockets of air, which where then analyzed to determine the mean age of air and the age of the ice in each sample, both in the unit years before present. CO2 concentration was then determined for both of these samples, and recorded in parts per miliion.
+
+```{r}
+icecore <- read_table("data/vostok.icecore.co2.txt",
+                      comment="#",
+                  col_names = c("Depth", "Age.of.ice", "mean.age.of.air", "CO2.concentration"
+                                ),
+                  na = c("-1", "-99.99"))
+
+tidy.icecore <- icecore |> 
+  drop_na() |>
+  mutate(
+    Depth = as.numeric(Depth),
+    Age.of.ice = as.numeric(Age.of.ice),
+    mean.age.of.air=as.numeric(mean.age.of.air),
+    CO2.concentration=as.numeric(CO2.concentration)
+  ) |>
+  filter(!is.na(Depth), !is.na(Age.of.ice), !is.na(mean.age.of.air), !is.na(CO2.concentration))|> 
+  drop_na(Depth, Age.of.ice,mean.age.of.air,CO2.concentration) |>
+pivot_longer(
+    cols = c(Age.of.ice, mean.age.of.air),
+    names_to = "Age_Type",
+    values_to = "Age"
+  ) |> 
+  group_by(Depth)
+
+
+chrono.icecore <- tidy.icecore[order(tidy.icecore$Age, decreasing = TRUE), ]
+
+
+```
 
 ### Q9 (1 point)
 
 Transform the data as needed to create a plot in chronological order. Add at least two different smoothing window averages to your plot.
 
+```{r}
+
+chrono.y1 <- mean(chrono.icecore$CO2.concentration)
+icecore.uni <- ggplot(chrono.icecore,
+                       aes(x =Age, y = CO2.concentration, color = Age_Type))+
+  geom_line() +
+  theme_minimal() +
+  geom_line(alpha = 0.6) +         
+  geom_smooth(
+    method = "loess",               
+    span = 0.1,                     
+    se = FALSE                     
+  ) +
+   geom_hline(yintercept = chrono.y1, color = "grey", linetype = "dashed")+
+  scale_x_reverse()+
+  labs( title = "Historic CO2 concentrations from ice samples",
+    y = "CO2 Concentration (PPMV)",
+    x = "Age of sample (in Years BP)")
+icecore.uni
+```
+
 ### Q10 (1 point)
 
 Join your data with the Mauna Loa data and plot together, considering different colors for the different datasets.
 
+```{r}
+
+
+fixed_co2<- dates.co2 |> 
+  select(-month, -decimal_date, -interpolated, -trend, -days, -date.formatting) |> 
+  transform(year <- dates.co2$year-1950) |> 
+  group_by(year) |> 
+  rename(Age = year) |> 
+  summarise(CO2.concentration = mean(average, na.rm = TRUE))
+
+combined_data <- full_join(chrono.icecore, fixed_co2, by = "Age", suffix = c(".icecore", ".atm"))
+# after combing the data, I reformated it be long to make graphing easier
+fixed_co2_long <- fixed_co2 %>%
+  mutate(Source = "Atmospheric CO2")
+
+tidy_icecore_long <- tidy.icecore %>%
+  group_by(Age) %>%                   
+  summarise(CO2.concentration = mean(CO2.concentration, na.rm = TRUE)) %>%
+  mutate(Source = "Ice Core CO2")
+
+plot_data <- bind_rows(fixed_co2_long, tidy_icecore_long)
+
+ggplot(plot_data, aes(x = Age, y = CO2.concentration, color = Source)) +
+  geom_line(size = 1) +             
+  geom_point(size = 1, alpha = 0.5) +  
+  scale_color_manual(values = c("Atmospheric CO2" = "coral", "Ice Core CO2" = "steelblue")) +
+  scale_x_reverse()+
+  labs(
+    x = "Age (Years Before Present)",
+    y = "CO2 Concentration (ppm)",
+    title = "Contextualizing Our Atmospheric Carbon",
+    color = "Source"
+  ) +
+  theme_minimal()
+```
+
 ### Bonus 2 (1 point)
 
 Write a catchy title and short description in the style of a NYtimes infographic, contrasting the rate of anthropogenic vs. background climate change for a general public audience.
+
+Contextualizing our carbon problem: Analysis of historic rates of CO2 cycling show that the anthropogene is outpacing historic CO2 basemakrs
